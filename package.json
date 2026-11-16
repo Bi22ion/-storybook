@@ -1,0 +1,20 @@
+{
+  "name": "storybook-school",
+<<<<<<< HEAD
+  "version": "2.1.0",
+=======
+  "version": "2.0.0",
+>>>>>>> 7fb8428f4ea9b1f295092e1b30452614e1e0f2f4
+  "private": true,
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node --no-warnings server.js",
+    "test": "node --no-warnings test.js"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.0"
+  }
+}
