@@ -16,11 +16,7 @@ const jar={};const call=async(m,u,b,c='t')=>{const r=await fetch('http://localho
  assert.equal((await call('GET','/users')).s,403,'blocked until password changed');
  assert.equal((await call('POST','/password',{old:'Admin@12345',password:'Admin@12345'})).s,400);
  assert.equal((await call('POST','/password',{old:'Admin@12345',password:'StrongPass1'})).s,200);console.log('admin: default login forces a password change');
-<<<<<<< HEAD
  const t=await call('POST','/tests',{title:test.title,level:test.level,story:test.story,Q:test.Q,published:true,assessment_type:'formative'});assert.equal(t.s,200);
-=======
- const t=await call('POST','/tests',{title:test.title,level:test.level,story:test.story,Q:test.Q,published:true});assert.equal(t.s,200);
->>>>>>> 7fb8428f4ea9b1f295092e1b30452614e1e0f2f4
  // sign-up + approval
  assert.equal((await call('POST','/signup',{name:'Pupil One',username:'pupil1',password:'1234',role:'student',level:'P.6'})).s,200);
  assert.equal((await call('POST','/signup',{name:'Pupil Two',username:'pupil2',password:'1234',role:'student',level:'P.2'})).s,200);
@@ -43,7 +39,6 @@ const jar={};const call=async(m,u,b,c='t')=>{const r=await fetch('http://localho
  assert.equal((await call('POST','/users',{name:'x',username:'xyz',password:'1234'},'tt')).s,403,'teacher cannot add accounts');
  assert.equal((await call('GET','/users',null,'s')).s,403);
  console.log('classes: pupils see only their class; teacher sees only own classes');
-<<<<<<< HEAD
  const st=await call('GET','/tests/'+t.j.id,null,'s');assert.equal(st.j.assessment_type,'formative','assessment type is stored and returned');const raw=JSON.stringify(st.j);assert(!/"ans"/.test(raw)&&!/"n":\d/.test(raw),'answers leaked');console.log('security: pupil copy has no answers');
  assert.equal((await call('POST','/tests',{title:'x',Q:[]},'s')).s,403);
  await call('POST','/tests/'+t.j.id+'/start',{},'s');
@@ -55,11 +50,30 @@ const jar={};const call=async(m,u,b,c='t')=>{const r=await fetch('http://localho
  const at=await call('GET','/attempts/'+sub.j.id,null,'s');assert.equal(at.j.got,at.j.total);assert.equal((await call('GET','/tests/'+t.j.id+'/analytics',null,'tt')).s,200,'teacher can see per-question analytics');console.log('marking: perfect answers scored',at.j.got+'/'+at.j.total);
  assert.equal((await call('GET','/attempts/'+sub.j.id,null,'p2')).s,404);assert.equal((await call('GET','/results',null,'tt')).j.length,1);
  const health=await call('GET','/health');assert.equal(health.s,200);assert.equal(health.j.ok,true);
- const story=await call('POST','/stories',{title:'The School Garden',level:'P.6',story:'The pupils planted beans and watered them every morning. Soon green leaves appeared.',summary:'Pupils care for a garden.',source_name:'Storybook School',licence:'Original school-created content',author:'School editorial team',learning_area:'Literacy II',competence:'Learners explain how plants are cared for.'},'t');assert.equal(story.s,200);const storyDetails=await call('GET','/stories/'+story.j.id,null,'t');assert.equal(storyDetails.j.learning_area,'Literacy II');assert.equal(storyDetails.j.competence,'Learners explain how plants are cared for.');assert.equal(storyDetails.j.curriculum_phase,'P.5–P.6 · Upper primary (school grouping)');assert.equal((await call('POST','/stories',{title:'Unsafe link',level:'P.6',story:'This has sufficient words for a valid story.',source_name:'School',licence:'Original',source_url:'javascript:alert(1)'},'t')).s,400,'unsafe source URL rejected');
+ const storyPayload={title:'The School Garden',level:'P.6',story:'The pupils planted beans and watered them every morning. Soon green leaves appeared.',summary:'Pupils care for a garden.',source_name:'Storybook School',licence:'Original school-created content',author:'School editorial team',language:'English',tags:['garden','plants'],learning_area:'Literacy II',competence:'Learners explain how plants are cared for.'};
+ assert.equal((await call('GET','/stories',null,'')).s,401,'story list requires sign-in');
+ const story=await call('POST','/stories',storyPayload,'t');assert.equal(story.s,200);
+ const storyDetails=await call('GET','/stories/'+story.j.id,null,'t');assert.equal(storyDetails.j.learning_area,'Literacy II');assert.equal(storyDetails.j.competence,'Learners explain how plants are cared for.');assert.equal(storyDetails.j.curriculum_phase,'P.5–P.6 · Upper primary (school grouping)');assert.equal(storyDetails.j.tags[0],'garden');
+ assert.equal((await call('GET','/stories?status=draft&level=P.6&q=Garden',null,'tt')).j.some(x=>x.id===story.j.id),true,'teacher can filter stories by status, class and search');
+ assert.equal((await call('GET','/stories/'+story.j.id,null,'s')).s,404,'pupils cannot open unpublished stories');
+ assert.equal((await call('GET','/stories/'+story.j.id,null,'')).s,401,'story details require sign-in');
+ assert.equal((await call('POST','/stories',{title:'Bad story',level:'P.6',story:'This story has enough words but no attribution.'},'s')).s,403,'pupils cannot create library stories');
+ assert.equal((await call('PUT','/stories/'+story.j.id,storyPayload,'s')).s,403,'pupils cannot update library stories');
+ assert.equal((await call('PATCH','/stories/'+story.j.id+'/publish',{status:'published'},'s')).s,403,'pupils cannot publish stories');
+ assert.equal((await call('DELETE','/stories/'+story.j.id,{},'s')).s,403,'pupils cannot archive stories');
+ assert.equal((await call('PUT','/stories/'+story.j.id,{...storyPayload,summary:'A refreshed garden story.'},'tt')).s,200,'teacher can update stories');
+ assert.equal((await call('POST','/stories',{...storyPayload,level:'P.9'},'t')).s,400,'invalid class level rejected');assert.equal((await call('POST','/stories',{...storyPayload,tags:Array(31).fill('tag')},'t')).s,400,'oversized tag list rejected');assert.equal((await call('POST','/stories',{...storyPayload,source_url:'javascript:alert(1)'},'t')).s,400,'unsafe source URL rejected');
+ const linkedTest=await call('POST','/tests',{title:'Garden reading test',level:'P.6',story:storyPayload.story,Q:test.Q,published:false,story_id:story.j.id},'t');assert.equal(linkedTest.s,200);
+ assert.equal((await call('GET','/tests/'+linkedTest.j.id,null,'t')).j.story_id,story.j.id,'test stores its linked library story');
  assert.equal((await call('PATCH','/stories/'+story.j.id+'/publish',{status:'published'},'t')).s,200);
  assert.equal((await call('GET','/stories',null,'s')).j.some(x=>x.id===story.j.id),true,'pupil sees published story for own level');
+ assert.equal((await call('GET','/stories/'+story.j.id,null,'s')).s,200,'pupil can open a published story for their class');
+ assert.equal((await call('GET','/stories/'+story.j.id,null,'p2')).s,404,'pupil cannot open a story for another class');
  assert.equal((await call('POST','/stories/'+story.j.id+'/read',{},'s')).s,200,'reading record and points');
- assert.equal((await call('POST','/stories', {title:'Bad story',level:'P.6',story:'This story has enough words but no attribution.'},'s')).s,403,'pupil cannot create library stories');
+ assert.equal((await call('POST','/stories/'+story.j.id+'/read',{},'tt')).s,403,'reading records are pupil-only');
+ assert.equal((await call('PATCH','/stories/'+story.j.id+'/publish',{status:'draft'},'tt')).s,200,'teacher can unpublish a story');
+ assert.equal((await call('GET','/stories/'+story.j.id,null,'s')).s,404,'unpublished stories are hidden from pupils');
+ assert.equal((await call('PATCH','/stories/'+story.j.id+'/publish',{status:'published'},'tt')).s,200,'teacher can republish a story');
  const parent=await call('POST','/users',{name:'Parent One',username:'parent1',password:'ParentPass1',role:'parent'},'t');assert.equal(parent.s,200,'admin can create parent');
  assert.equal((await call('POST','/parent-links',{parent_id:parent.j.id,student_id:id('pupil1')},'t')).s,200);
  assert.equal((await call('POST','/login',{username:'parent1',password:'ParentPass1'},'par')).s,200);
@@ -69,7 +83,7 @@ const jar={};const call=async(m,u,b,c='t')=>{const r=await fetch('http://localho
  assert.equal((await call('POST','/results/'+sub.j.id+'/comment',{comment:'Good effort. Keep practising inference.'},'tt')).s,200);
  assert.equal((await call('GET','/parent/results',null,'par')).j[0].comment,'Good effort. Keep practising inference.','parent can see teacher comment');assert.equal((await call('GET','/parent/attempts/'+sub.j.id,null,'par')).s,200,'parent can see corrections only after completion');
  assert.equal((await call('POST','/announcements',{title:'School update',body:'Meeting on Friday',target_role:'parent'},'t')).s,200);assert.equal((await call('GET','/announcements',null,'par')).j.length,1,'parent sees announcements');
- const qi=await call('POST','/question-bank/import',{story_id:story.j.id,rows:[{bloom:'Remember',section:'Comprehension',type:'mc',question:'Where did the pupils plant beans?',answer:'In the garden',option1:'At the market',option2:'By the river',option3:'At home',marks:1}]},'t');assert.equal(qi.s,200);assert.equal(qi.j.created,1);const qbank=await call('GET','/question-bank?story_id='+story.j.id,null,'t');assert.equal(qbank.j.length,1);assert.equal((await call('PATCH','/question-bank/'+qbank.j[0].id,{approved:true},'t')).s,200);assert.equal((await call('GET','/question-bank?story_id='+story.j.id+'&approved=1',null,'t')).j.length,1);const practice=await call('GET','/stories/'+story.j.id+'/practice',null,'s');assert.equal(practice.s,200);assert(practice.j.Q.every(q=>!('ans'in q)&&!('kw'in q)),'practice mode hides answer keys');
+ const qi=await call('POST','/question-bank/import',{story_id:story.j.id,rows:[{bloom:'Remember',section:'Comprehension',type:'mc',question:'Where did the pupils plant beans?',answer:'In the garden',option1:'At the market',option2:'By the river',option3:'At home',marks:1}]},'t');assert.equal(qi.s,200);assert.equal(qi.j.created,1);const qbank=await call('GET','/question-bank?story_id='+story.j.id,null,'t');assert.equal(qbank.j.length,1);assert.equal((await call('PATCH','/question-bank/'+qbank.j[0].id,{approved:true},'t')).s,200);assert.equal((await call('GET','/question-bank?story_id='+story.j.id+'&approved=1',null,'t')).j.length,1);const practice=await call('GET','/stories/'+story.j.id+'/practice',null,'s');assert.equal(practice.s,200);assert(practice.j.Q.every(q=>!('ans'in q)&&!('kw'in q)),'practice mode hides answer keys');assert.equal((await call('DELETE','/stories/'+story.j.id,{},'tt')).s,200,'teacher archives a story instead of deleting it');assert.equal((await call('GET','/stories?status=archived',null,'t')).j.some(x=>x.id===story.j.id),true,'archived story remains recoverable');assert.equal((await call('GET','/tests/'+linkedTest.j.id,null,'t')).j.story_id,story.j.id,'archiving a story keeps its linked test intact');
  const bulk=await call('POST','/users/import',{rows:[{name:'Imported Pupil',username:'imported1',level:'P.3'},{name:'Duplicate Pupil',username:'pupil1',level:'P.6'}]},'t');assert.equal(bulk.s,200);assert.equal(bulk.j.created,1);assert.equal(bulk.j.skipped,1);assert.equal(bulk.j.credentials[0].password.length,6);
 
  const cls=await call('POST','/classes',{name:'P.6 Blue',level:'P.6',academic_year:'2026'},'t');assert.equal(cls.s,200);assert.equal((await call('POST','/classes/'+cls.j.id+'/members',{user_id:id('teach1')},'t')).s,200);assert.equal((await call('POST','/classes/'+cls.j.id+'/members',{user_id:id('pupil1')},'t')).s,200);assert((await call('GET','/classes',null,'tt')).j.some(x=>x.id===cls.j.id));
@@ -79,16 +93,6 @@ const jar={};const call=async(m,u,b,c='t')=>{const r=await fetch('http://localho
  assert.equal((await call('POST','/tests/'+t.j.id+'/retake',{student_id:id('pupil1'),reason:'Additional practice'},'tt')).s,200,'teacher can allow retake');assert.equal((await call('GET','/parent/results',null,'par')).j.length,0,'old attempt is archived before new attempt');const backup=await call('GET','/backup',null,'t');assert.equal(backup.s,200);assert.equal(backup.j.tables.attempt_history.length,1,'previous attempt retained in backup');assert(!('pass_hash'in backup.j.tables.users[0]),'backup excludes password hashes');
  assert.equal((await call('POST','/tests/'+t.j.id+'/start',{},'s')).s,200,'pupil can start the approved retake');assert.equal((await call('POST','/ai/story-details',{title:'AI story',level:'P.6'},'tt')).s,503,'AI endpoint clearly reports missing server key');assert.equal((await call('POST','/uploads/sign',{name:'x.pdf',mime_type:'application/pdf',size_bytes:100},'tt')).s,503,'storage endpoint clearly reports missing configuration');
  console.log('library: published stories, read tracking, parent-child scope, question bank, comments, announcements, resume and archive ok');
-=======
- const st=await call('GET','/tests/'+t.j.id,null,'s');const raw=JSON.stringify(st.j);assert(!/"ans"/.test(raw)&&!/"n":\d/.test(raw),'answers leaked');console.log('security: pupil copy has no answers');
- assert.equal((await call('POST','/tests',{title:'x',Q:[]},'s')).s,403);
- await call('POST','/tests/'+t.j.id+'/start',{},'s');
- const A=test.Q.map(q=>q.type==='mc'?q.ans:q.type==='cloze'?q.ans:q.type==='order'?q.items.map(i=>String(i.n)):'Akello thanked Opio because he helped her find the goat. Mzee Wasswa was kind to them in the village near the river and they all went home happy. Akello was proud of her goat.');
- const sub=await call('POST','/tests/'+t.j.id+'/submit',{answers:A},'s');assert.equal(sub.s,200);
- assert.equal((await call('POST','/tests/'+t.j.id+'/submit',{answers:[]},'s')).s,409);
- const at=await call('GET','/attempts/'+sub.j.id,null,'s');assert.equal(at.j.got,at.j.total);console.log('marking: perfect answers scored',at.j.got+'/'+at.j.total);
- assert.equal((await call('GET','/attempts/'+sub.j.id,null,'p2')).s,404);assert.equal((await call('GET','/results',null,'tt')).j.length,1);
->>>>>>> 7fb8428f4ea9b1f295092e1b30452614e1e0f2f4
  assert.equal((await call('PATCH','/users/'+id('pupil1'),{status:'disabled'})).s,200);assert.equal((await call('GET','/tests',null,'s')).s,401,'disabled user session ends');
  for(let i=0;i<5;i++)await call('POST','/login',{username:'pupil2',password:'x'},'z');assert.equal((await call('POST','/login',{username:'pupil2',password:'1234'},'z')).s,423);console.log('lockout: ok');
  const h=await fetch('http://localhost:3999/');assert(h.headers.get('content-security-policy')&&(await h.text()).includes('Storybook'));assert.equal((await fetch('http://localhost:3999/../server.js')).status,404);
