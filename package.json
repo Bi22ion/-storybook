@@ -6,7 +6,7 @@
     "node": ">=22.5"
   },
   "scripts": {
-    "build": "echo 'Static public assets ready'",
+    "build": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.mkdirSync('dist', { recursive: true }); fs.cpSync('public', 'dist', { recursive: true });\"",
     "start": "node --no-warnings server.js",
     "test": "node --no-warnings test.js"
   },
