@@ -30,7 +30,7 @@ main{max-width:1040px;margin:0 auto;padding:8px 16px 60px;animation:in .5s ease 
 @media(max-width:700px){.two,.row{grid-template-columns:1fr}}
 .stat{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border-radius:20px;padding:18px;box-shadow:0 10px 24px rgba(0,0,0,.18)}.stat b{display:block;font:700 2.4rem Palatino,Georgia,serif}
 label.f{display:block;font-weight:700;margin:12px 0 4px;color:var(--night)}
-input[type=text],input[type=password],textarea,select{width:100%;font:inherit;color:var(--ink);background:#fff;border:2px solid var(--bd);border-radius:14px;padding:10px 13px;transition:border .2s,box-shadow .2s}
+input[type=text],input[type=password],input[type=number],input[type=datetime-local],textarea,select{width:100%;font:inherit;color:var(--ink);background:#fff;border:2px solid var(--bd);border-radius:14px;padding:10px 13px;transition:border .2s,box-shadow .2s}
 textarea{min-height:90px;resize:vertical}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--sky);box-shadow:0 0 0 4px rgba(79,140,255,.25)}button:focus-visible,a:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
 button{font:inherit;font-weight:700;border-radius:14px;padding:10px 18px;border:2px solid var(--night);background:transparent;color:var(--night);cursor:pointer;transition:transform .15s,box-shadow .15s}
 button:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(43,31,107,.2)}button:active{transform:none}button:disabled{opacity:.5;pointer-events:none}
