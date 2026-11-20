@@ -1,13 +1,18 @@
 "use strict";
-const $=typeof document!=='undefined'?s=>document.querySelector(s):()=>null;
+<<<<<<< HEAD
 const app=$('#app'),bar=$('#bar');let ME=null,TAB='home',CACHE={},PEND=0,SCHOOL_NAME='Storybook School',SCHOOL_LOGO='';
 const api=async(m,u,b)=>{for(let attempt=0;attempt<3;attempt++){let r;try{r=await fetch('/api'+u,{method:m,credentials:'same-origin',headers:{'Content-Type':'application/json','X-Requested-With':'sb'},body:b?JSON.stringify(b):undefined})}catch(e){if(attempt===2)throw Error('The school server is still waking up. Please try again shortly.');if(app)app.innerHTML='<p class="boot">The school server is waking up. Reconnecting…</p>';await new Promise(ok=>setTimeout(ok,1200*(attempt+1)));continue}const j=await r.json().catch(()=>({}));if(r.ok)return j;if([502,503,504].includes(r.status)&&attempt<2){if(app)app.innerHTML='<p class="boot">The school server is waking up. Reconnecting…</p>';await new Promise(ok=>setTimeout(ok,1200*(attempt+1)));continue}throw Error(j.error||'Something went wrong.')}throw Error('The school server is still waking up. Please try again shortly.')};
-const toast=t=>{const e=$('#toast');if(!e)return;e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2800)};
+=======
+const app=$('#app'),bar=$('#bar');let ME=null,TAB='home',CACHE={},PEND=0;
+const api=async(m,u,b)=>{const r=await fetch('/api'+u,{method:m,credentials:'same-origin',headers:{'Content-Type':'application/json','X-Requested-With':'sb'},body:b?JSON.stringify(b):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'Something went wrong.');return j};
+>>>>>>> 7fb8428f4ea9b1f295092e1b30452614e1e0f2f4
+const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2800)};
 const msg=(id,t,ok)=>{const e=$('#'+id);if(e){e.textContent=t;e.className='msg'+(ok?' ok-msg':'')}};
 const COL=[['#6a5cff','#4f8cff'],['#ff6b6b','#ff9f43'],['#12b5a6','#4f8cff'],['#b455ff','#ff6bb5'],['#2fbf71','#12b5a6']],EM=['🦁','🐘','🦒','🦜','🌈','🚀','🐢','🌳'];
 const cv=i=>'--c1:'+COL[i%5][0]+';--c2:'+COL[i%5][1];
 const pc=(g,t)=>t?Math.round(g/t*100):0,stars=p=>p>=80?3:p>=60?2:p>=40?1:0,dt=t=>new Date(t).toLocaleDateString();
 const BL=['Remember','Understand','Apply','Analyze','Evaluate','Create'];
+
 /* ---- celebration ---- */
 function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const c=$('#fx'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;
  const P=Array.from({length:150},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,v:2+Math.random()*4,s:5+Math.random()*7,a:Math.random()*6,c:['#ffc83d','#ff6b6b','#12b5a6','#4f8cff','#b455ff'][Math.random()*5|0]}));let f=0;
