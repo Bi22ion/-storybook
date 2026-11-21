@@ -16,7 +16,7 @@ npm start
 
 Open `http://localhost:3000`. With `DATABASE_URL` blank, the server creates `storybook.db`, installs SQLite migrations in order, and seeds an administrator account (`admin` / `Admin@12345`). Change that bootstrap password immediately; it is public, known starter credentials.
 
-Run automated checks with `npm test`; build the static Vercel frontend with `npm run build`.
+Run automated API/SQLite checks with `npm test`. Install the Playwright browser once with `npx playwright install chromium`, then run the four-role browser journey with `npm run test:browser`. Run PostgreSQL API checks only against a disposable database: `TEST_DATABASE_URL=<throwaway-postgres-url> npm run test:postgres`. Build the static Vercel frontend with `npm run build`.
 
 ## Environment variables
 
@@ -34,6 +34,7 @@ Run automated checks with `npm test`; build the static Vercel frontend with `npm
 | `SUPABASE_URL` | Optional, in a set | Supabase project URL for private uploads. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Optional, in a set | Server-only Supabase service-role key. Never expose to the browser. |
 | `STORAGE_BUCKET` | Optional, in a set | Private Supabase Storage bucket for source uploads. |
+| `TEST_DATABASE_URL` | PostgreSQL tests only | Disposable PostgreSQL database used by `npm run test:postgres`; never point this at production. |
 
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `STORAGE_BUCKET` must be configured together. Optional feature variables are not needed for a standard local run. Configure production secrets in Render's environment settings, not in repository files or `public/`.
 
