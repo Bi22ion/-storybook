@@ -1,163 +1,72 @@
 # Storybook School
 
-<<<<<<< HEAD
-A school reading and assessment platform for primary learners (P.1–P.6). This upgrade extends the supplied Node.js + browser-JavaScript application; it does **not** replace its framework or rewrite the original assessment engine.
+Storybook School is a primary-school reading and assessment app. It keeps the existing plain Node.js HTTP server, static browser frontend, SQLite/PostgreSQL data layer, Vercel static hosting, and Render API arrangement.
 
-## What is included in this upgrade
+## Requirements and local setup
 
-- Story Library with draft/published/archived states, class-level filtering, source/licence metadata, editing and story-read tracking. Eight original sample stories are seeded by migration 001.
-- Story-to-test workflow: choose a library story while creating a test; the story relationship is retained on the test. Tests are labelled formative/continuous or summative.
-- Story imports from pasted text, TXT, DOCX and text-based PDF. Scanned PDF pages can be OCR-processed in the browser when the OCR library loads. Original PDF, DOCX, TXT, image and MP3 files can optionally be uploaded directly to a private Supabase Storage bucket using server-issued signed URLs.
-- AI story details and comprehension-question generation through the Anthropic Messages API. The API key stays on the server. Generated questions are stored as **unapproved drafts** in the question bank; teachers approve them before adding them to a test.
-- Question-bank CSV import with row validation and error reporting.
-- Classes, class membership assignment, parent account creation/linking, CSV pupil import preview, duplicate checks and one-time starting passwords.
-- Teacher tools: edit a test title before anyone starts it (the backend accepts a fuller update, but a complete post-creation question editor is not yet exposed), duplicate, archive, time limit, due date, question analytics, result filters, CSV export, printable pupil reports, comments and controlled retakes. Retakes preserve the previous attempt in `attempt_history` and write an audit event.
-- Pupil tools: unfinished-test answer saving/resume, server-enforced timing, Story Library, reading practice, browser read-aloud with word highlighting, accessibility display controls, progress, points, daily reading streak and badges.
-- Parent dashboard: linked children only, completed results, Bloom-level breakdowns, teacher comments, post-submission corrections and announcements. Parent result detail is restricted to completed attempts.
-- Admin tools: audit log, announcements, school name/logo settings, JSON backup, password reset with forced password change, and sign out everywhere.
-- Operational/security additions: numbered migrations, startup environment warnings, persistent login rate limits, upload limits, AI daily limits, CSRF/origin checks, security headers and `/api/health`.
+- Node.js 22.5 or newer (Node 24 is recommended)
+- npm (or pnpm with the checked-in lockfile)
+- PostgreSQL/Supabase for shared production use, or built-in `node:sqlite` for local use
 
-See [Uganda curriculum alignment](docs/CURRICULUM_ALIGNMENT.md), [implementation matrix](docs/IMPLEMENTATION_MATRIX.md), [upgrade scope and known gaps](docs/UPGRADE_SCOPE.md), [security review](docs/SECURITY_REVIEW.md) and [verification report](docs/VERIFICATION_REPORT.md) before production use. The original uploaded playbook is retained in `docs/reference/`.
-
-## Preserve the original architecture
-
-- **Server:** `server.js`, Node.js built-in HTTP server (no Express rewrite).
-- **Frontend:** `public/index.html`, `public/app.js`, `public/engine.js`, `public/style.css`.
-- **Database:** PostgreSQL through `pg` when `DATABASE_URL` is set; otherwise SQLite through Node's built-in `node:sqlite`.
-- **Hosting:** static frontend on Vercel; API server on Render, using the existing `vercel.json` rewrite. Keep the existing Render service URL unless you intentionally migrate the API service.
-- **Build:** `scripts/build.js` copies the public frontend into `dist/`.
-
-## Requirements
-
-- Node.js 22.5 or newer.
-- npm (or pnpm, if that is how the repository is managed).
-- PostgreSQL/Supabase for a shared production database, or SQLite for local development.
-
-## Run locally with SQLite
-
-```bash
+```sh
 npm install
 cp .env.example .env
-# Leave DATABASE_URL blank to use SQLite. Set a different DB path if desired.
 npm start
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. With `DATABASE_URL` blank, the server creates `storybook.db`, installs SQLite migrations in order, and seeds an administrator account (`admin` / `Admin@12345`). Change that bootstrap password immediately; it is public, known starter credentials.
 
-The local SQLite database is created as `storybook.db`. The first run seeds an administrator account. The initial credentials are `admin` / `Admin@12345`; the account is forced to change its password. **Change this immediately before exposing the app to anyone.** The password is a known bootstrap credential, not a secure production secret.
+Run automated checks with `npm test`; build the static Vercel frontend with `npm run build`.
 
-To run the test suite and build:
+## Environment variables
 
-```bash
-npm test
-npm run build
-```
+| Variable | Required | Purpose |
+|---|---|---|
+| `PORT` | No | HTTP listen port; defaults to 3000. |
+| `DATABASE_URL` | Production | PostgreSQL connection string. Leave empty for SQLite. |
+| `PGSSL` | No | Set to `1` to require TLS for PostgreSQL; common hosted database URLs enable SSL automatically. |
+| `DB` | No | Alternate SQLite file path (only when `DATABASE_URL` is unset). |
+| `HTTPS` | Production | Set to `1` behind Render's HTTPS proxy for secure cookies and HSTS. |
+| `CORS_ORIGINS` | Production | Comma-separated exact frontend origins, including scheme, without trailing slash. |
+| `ANTHROPIC_API_KEY` | No | Server-only key enabling AI story/question tools. Never expose to the frontend. |
+| `ANTHROPIC_MODEL` | No | Server-side model override for AI tools. |
+| `AI_DAILY_LIMIT` | No | Maximum AI calls per teacher each day; defaults to 30. |
+| `SUPABASE_URL` | Optional, in a set | Supabase project URL for private uploads. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional, in a set | Server-only Supabase service-role key. Never expose to the browser. |
+| `STORAGE_BUCKET` | Optional, in a set | Private Supabase Storage bucket for source uploads. |
 
-## PostgreSQL / Supabase setup
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `STORAGE_BUCKET` must be configured together. Optional feature variables are not needed for a standard local run. Configure production secrets in Render's environment settings, not in repository files or `public/`.
 
-1. Create a PostgreSQL database and a dedicated application connection string (Supabase session pooler is suitable).
-2. Back up the database before changing it.
-3. If this is a new database, run `schema.postgres.sql` once to create the original base tables.
-4. Set `DATABASE_URL` on the API server. Set `PGSSL=1` if your provider requires SSL. On startup, the server applies any unapplied `migrations/storybook-upgrade-NNN.postgres.sql` files in numeric order.
-5. Confirm the `/api/health` endpoint returns `{"ok":true,...}` and inspect the migration table `schema_migrations`.
+## PostgreSQL / Supabase database setup
 
-The SQLite equivalent migration is `migrations/storybook-upgrade-001.sqlite.sql`. The migration runner records successful migrations. Do not manually run an old Gemini-generated SQL statement that assumes a `stories` table already exists. Do not run rollback SQL after real users or parent links exist without a reviewed recovery plan.
+1. Create a PostgreSQL database and an application connection string (Supabase session pooler is suitable).
+2. Back up existing data before applying schema changes.
+3. For a new database only, run `schema.postgres.sql` once to create the original base schema.
+4. Run `migrations/storybook-upgrade-001.postgres.sql`, then `002`, `003`, and `004` in numeric order. For the SQLite equivalent use the matching `.sqlite.sql` files. These upgrade scripts are idempotent; migration 001 creates the migration ledger and the server runner records successful upgrades in `schema_migrations`.
+5. Set `DATABASE_URL` (and `PGSSL=1` if required) on the API server and start it. The startup migration runner applies any unrecorded upgrade scripts in numeric order. Do not execute schema upgrades out of order.
+6. Verify `GET /api/health` returns `{"ok":true,...}`.
 
-## Optional AI configuration (Render/API server only)
+The server uses PostgreSQL when `DATABASE_URL` is set, otherwise SQLite. Existing table timestamps are Unix milliseconds.
 
-```dotenv
-ANTHROPIC_API_KEY=your_server_side_key
-ANTHROPIC_MODEL=claude-sonnet-5-5
-AI_DAILY_LIMIT=30
-```
+## Existing deployment (Vercel + Render)
 
-The model can be changed without editing code. The server limits calls per teacher per day and records usage in `ai_usage`. If the key is absent, AI endpoints return a clear configuration message; the original browser template question generator remains available. Never place `ANTHROPIC_API_KEY` in `public/`, Vercel frontend variables, or client JavaScript.
+### Render API
 
-## Optional private file storage
+- Deploy the repository's Node server; set `NODE_VERSION` to 22.5 or later.
+- Configure `DATABASE_URL`, `HTTPS=1`, and `CORS_ORIGINS` for the exact Vercel/custom domains.
+- Set the Render health-check path to **`/api/health`**. The endpoint executes a database query and responds successfully only when the database is reachable.
+- Put optional AI and storage secrets on Render only.
 
-Create a **private** Supabase Storage bucket (for example `storybook-private`) and configure its maximum file size to 15 MB and its allowed MIME types to:
+### Vercel frontend
 
-- `application/pdf`
-- `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
-- `text/plain`
-- `image/png`
-- `image/jpeg`
-- `audio/mpeg`
+- Keep the existing `vercel.json` rewrite to the Render API.
+- Build command: `npm run build`; output directory: `dist`.
+- If the API host or frontend domain changes, update the rewrite and CORS origin configuration together.
 
-Set these variables on the Node API server only:
+On a Render cold start, the browser displays a friendly waking-up status and retries transient network/502/503/504 responses. Other errors are still reported normally.
 
-```dotenv
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-STORAGE_BUCKET=storybook-private
-```
+## Backup and security
 
-The service-role key must never be exposed to the browser. The browser receives a short-lived signed upload URL from the Node server and uploads directly to Supabase Storage; downloads also use short-lived signed URLs. The application validates metadata and size before issuing an upload URL. The Supabase bucket's own size/MIME restrictions are the final enforcement layer for the uploaded object. Supabase recommends resumable TUS uploads for larger files (around 6 MB and above); this build uses signed standard uploads up to the playbook's 15 MB cap, so 6–15 MB uploads may be less resilient on unstable connections. Resumable TUS support remains a follow-up improvement.
+An administrator can download JSON or CSV from the dashboard. The backup omits password hashes and session tokens; nevertheless, the export contains sensitive school data and should be stored securely. The backup endpoint is restricted server-side to the `admin` role.
 
-If only some storage variables are configured, startup prints a warning and upload endpoints remain unavailable.
-
-## Production deployment (existing Vercel + Render arrangement)
-
-### Render
-
-- Deploy the repository's Node service.
-- Set `NODE_VERSION` to a supported Node 22 release.
-- Set `DATABASE_URL`, `HTTPS=1`, and `CORS_ORIGINS` for the exact Vercel/custom frontend origin(s).
-- Add the optional Anthropic and Supabase Storage variables only when those services are configured.
-- Use `/api/health` as the Render health-check path.
-- Keep all server secrets in Render environment variables.
-
-### Vercel
-
-- Keep the existing Vercel project and `vercel.json` rewrite to the Render API service.
-- Build command: `npm run build`.
-- Output directory: `dist`.
-- If you change the frontend domain or API service URL, update the rewrite and the Render `CORS_ORIGINS` value together.
-
-### First production release
-
-1. Make the repository private if it is not already.
-2. Change the bootstrap admin password and rotate any previously exposed credentials.
-3. Back up Supabase/PostgreSQL.
-4. Deploy to a preview/staging environment first.
-5. Verify the migration marker, `/api/health`, all four roles, a real class, a real test and a parent-child link.
-6. Verify private bucket access and signed upload/download with a small test file.
-7. Verify AI calls with a low daily limit and a test key.
-8. Run the acceptance checklist in `docs/TESTING.md` before opening the platform to a full school.
-
-## Content and copyright
-
-Only import material that is public domain, openly licensed, created by the school, or used with written permission. Store author, source name, source URL and licence/permission for every story. The Story Library requires source and licence metadata before a story can be saved/published. See `docs/CONTENT_LICENSING.md`.
-
-## Notes
-
-- All timestamps stored by the application are Unix milliseconds (`BIGINT` in PostgreSQL / `INTEGER` in SQLite).
-- The browser uses pinned CDN builds of Mammoth, PDF.js, Tesseract.js and Papa Parse for document/CSV parsing. These are convenience dependencies for file import; the backend remains independent of them.
-- This ZIP includes the source and the migration files. A successful local SQLite test run does not prove that a particular live PostgreSQL database, Render service or Supabase bucket is configured correctly. See the verification limitations in `docs/UPGRADE_SCOPE.md`.
-=======
-## How to start (important)
-Never double-click index.html. Double-click **start.bat** (Windows) or run **./start.sh**, then open **http://localhost:3000**.
-For Supabase: copy `.env.example` to `.env`, put your connection string in it, then run start.bat.
-
-## First sign-in
-Username `admin`, password `Admin@12345`. You must choose a new password straight away.
-
-## Option A: PostgreSQL / Supabase (what you are using)
-1. In Supabase, open SQL Editor and run **schema.postgres.sql** (NOT the sqlite file). It creates the tables, locks them from the public API and adds the admin.
-2. Copy your database connection string (Project Settings > Database > Connection string; the "Session pooler" one is best).
-3. In this folder:  `npm install`  then  `DATABASE_URL="postgresql://..." node server.js`
-   (Windows PowerShell: `$env:DATABASE_URL="postgresql://..."; node server.js`)
-4. Open http://localhost:3000
-
-## Option B: no database setup (SQLite, needs Node 22.5+)
-`node server.js`  (creates storybook.db and the admin automatically; uses schema.sqlite.sql)
-
-## How access works
-- Anyone can press "Create account" and choose Pupil or Teacher plus their class.
-- They cannot sign in until the admin approves them under **Approvals**, where the admin can change the class first, or reject.
-- Pupils see only published tests for their class. Teachers see only pupils and results for the classes the admin gave them.
-- Only the admin adds accounts directly, switches accounts off, or adds teachers.
-
-Env vars: PORT, DATABASE_URL, PGSSL=1, HTTPS=1 (Secure cookies + HSTS, use behind HTTPS), DB (SQLite file).
-Self-test (SQLite): `node test.js`
->>>>>>> 7fb8428f4ea9b1f295092e1b30452614e1e0f2f4
+Read `docs/SECURITY_REVIEW.md`, `docs/TESTING.md`, and `docs/UPGRADE_SCOPE.md` before production use. Change the seeded administrator password, use a private repository, configure the private upload bucket's size/MIME limits, and test database migrations against staging before production.

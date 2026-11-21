@@ -7,3 +7,5 @@ storybook.db-*
 .env*.local
 .vercel
 dist/
+test-results/
+playwright-report/
