@@ -8,9 +8,14 @@
   "scripts": {
     "build": "node -e \"const fs = require('fs'); fs.rmSync('dist', { recursive: true, force: true }); fs.mkdirSync('dist', { recursive: true }); fs.cpSync('public', 'dist', { recursive: true });\"",
     "start": "node --no-warnings server.js",
-    "test": "node --no-warnings test.js"
+    "test": "node --no-warnings test.js",
+    "test:postgres": "node --no-warnings -e \"if(!process.env.TEST_DATABASE_URL)throw Error('Set TEST_DATABASE_URL to a disposable PostgreSQL database');process.env.TEST_POSTGRES='1';require('./test.js')\"",
+    "test:browser": "playwright test"
   },
   "optionalDependencies": {
     "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
   }
 }
